@@ -8,11 +8,13 @@ fi
 
 RELEASE_NAME=$(echo "$YAML_CONF" | yq r - metadata.name)
 
-kubectl get secrets $RELEASE_NAME-operator-state-backup -o go-template --template='{{index .data "operator-keys"}}' | base64 -d > operator-keys.tar.gz
-mkdir operator-keys
-tar -C operator-keys -zxvf operator-keys.tar.gz
+echo "Get EJSON from cluster"
 
+kubectl get secrets $RELEASE_NAME-operator-state-backup -o go-template --template='{{index .data "ejson-keys"}}' | base64 -d > ejson-keys.tar.gz
 
+tar -C $EJSON_KEYDIR -zxvf ejson-keys.tar.gz
+
+echo "EJSON env dir: $EJSON_KEYDIR"
 
 git config --global credential.helper store
 
@@ -28,12 +30,22 @@ echo "https://${GITHUB_TOKEN}:x-oauth-basic@github.com" >> ~/.git-credentials
 CONFIG_OUT_DIR="config_repo"
 git clone $REPO $CONFIG_OUT_DIR
 cd $CONFIG_OUT_DIR
+
+# check if last commit happened within 10 minutes
+#lastCommitDetails=$(git log -1 --format=raw)
+#lastCommit=$(git log -1 --format=%ct)
+#currentMinusTenMinute=$(date -v-10M +"%s")
+#count=$(expr $lastCommit - $currentMinusTenMinute)
+#if [ $count -lt 0 ]
+#then
+#  echo "No need to apply again \n already applied commit details \n $lastCommitDetails"
+#  exit 0
+#fi
+  
 git checkout $BRANCH
 cd $PROFILE_DIR
 
-
-
-kustomize build . | kubectl apply -f -
+kustomize build . | kubectl apply -f - --validate=false
 
 
 

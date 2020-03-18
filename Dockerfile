@@ -1,6 +1,5 @@
 FROM google/cloud-sdk:alpine
 
-RUN apk add --no-cache gomplate
 ENV KUSTOMIZE_VERSION 0.0.14
 ENV KUBECTL_VER 1.17.4
 RUN wget -O /tmp/kustomize.tar.gz https://github.com/qlik-oss/kustomize/releases/download/qlik%2Fv${KUSTOMIZE_VERSION}/kustomize_qlik_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz
@@ -12,13 +11,11 @@ RUN wget -O /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-rel
 
 COPY --from=mikefarah/yq /usr/bin/yq /usr/local/bin/yq
 
-
-
-RUN mkdir /src
+RUN mkdir -p /src/ejson-keys
 #script will read k8s secrets and put ejson keys into this directory
-ENV EJSON_KEYDIR /src/operator-keys
+ENV EJSON_KEYDIR /src/ejson-keys
 
 COPY run-script.sh /src/
 WORKDIR /src
-CMD ["./run-script.sh"]
+ENTRYPOINT ["./run-script.sh"]
 
