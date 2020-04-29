@@ -6,47 +6,23 @@ if [[ -z "${YAML_CONF}" ]]; then
   exit 1
 fi
 
-RELEASE_NAME=$(echo "$YAML_CONF" | yq r - metadata.name)
-
-echo "Get EJSON from cluster"
-
-kubectl get secrets $RELEASE_NAME-operator-state-backup -o go-template --template='{{index .data "ejson-keys"}}' | base64 -d > ejson-keys.tar.gz
-
-tar -C $EJSON_KEYDIR -zxvf ejson-keys.tar.gz
-
-echo "EJSON env dir: $EJSON_KEYDIR"
-
 git config --global credential.helper store
 
-GITHUB_TOKEN=$(echo "$YAML_CONF" | yq r - spec.git.accessToken)
-
-REPO=$(echo "$YAML_CONF" | yq r - spec.git.repository)
-
-BRANCH=$(echo "$YAML_CONF" | yq r - spec.gitOps.watchBranch)
-PROFILE_NAME=$(echo "$YAML_CONF" | yq r - spec.profile)
-PROFILE_DIR="manifests/$PROFILE_NAME"
+GITHUB_TOKEN=$(echo "${YAML_CONF}" | yq r - spec.git.accessToken)
+REPO=$(echo "${YAML_CONF}" | yq r - spec.git.repository)
+BRANCH=$(echo "${YAML_CONF}" | yq r - spec.gitOps.watchBranch)
 echo "https://${GITHUB_TOKEN}:x-oauth-basic@github.com" >> ~/.git-credentials
 
 CONFIG_OUT_DIR="config_repo"
-git clone $REPO $CONFIG_OUT_DIR
-cd $CONFIG_OUT_DIR
+git clone ${REPO} ${CONFIG_OUT_DIR}
+cd ${CONFIG_OUT_DIR}
+git checkout ${BRANCH}
 
-# check if last commit happened within 10 minutes
-#lastCommitDetails=$(git log -1 --format=raw)
-#lastCommit=$(git log -1 --format=%ct)
-#currentMinusTenMinute=$(date -v-10M +"%s")
-#count=$(expr $lastCommit - $currentMinusTenMinute)
-#if [ $count -lt 0 ]
-#then
-#  echo "No need to apply again \n already applied commit details \n $lastCommitDetails"
-#  exit 0
-#fi
-  
-git checkout $BRANCH
-cd $PROFILE_DIR
+tar -zcf ../${CONFIG_OUT_DIR}.tgz .
+cd ..
 
-kustomize build . | kubectl apply -f - --validate=false
-
-
-
+CR_BASE64=$(echo "${YAML_CONF}" | base64 -w 0)
+CONFIG_BASE64=$(cat "${CONFIG_OUT_DIR}.tgz" | base64 -w 0)
+echo '{"cr":"'${CR_BASE64}'","config":"'${CONFIG_BASE64}'"}' > post_data.json
+curl -X POST -H "Content-Type: application/json" -d @./post_data.json http://${OPERATOR_SERVICE_NAME}:${OPERATOR_SERVICE_PORT}/kuz
 

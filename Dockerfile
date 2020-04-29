@@ -1,6 +1,8 @@
 FROM google/cloud-sdk:alpine
 
-ENV KUSTOMIZE_VERSION 0.0.14
+RUN apk add --update coreutils
+
+ENV KUSTOMIZE_VERSION 0.0.24
 ENV KUBECTL_VER 1.17.4
 RUN wget -O /tmp/kustomize.tar.gz https://github.com/qlik-oss/kustomize/releases/download/qlik%2Fv${KUSTOMIZE_VERSION}/kustomize_qlik_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz
 RUN cd /tmp/ && tar xfv kustomize.tar.gz && chmod +x kustomize && mv kustomize /usr/local/bin/
