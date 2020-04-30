@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+echo "starting..."
 
 if [[ -z "${YAML_CONF}" ]]; then
   echo "CR not found in YAML_CONF env variable"
@@ -14,9 +15,12 @@ BRANCH=$(echo "${YAML_CONF}" | yq r - spec.gitOps.watchBranch)
 echo "https://${GITHUB_TOKEN}:x-oauth-basic@github.com" >> ~/.git-credentials
 
 CONFIG_OUT_DIR="config_repo"
+echo "cloning repo: ${REPO}"
 git clone ${REPO} ${CONFIG_OUT_DIR}
+echo "cloned repo: ${REPO}"
 cd ${CONFIG_OUT_DIR}
 git checkout ${BRANCH}
+echo "checked out branch: ${BRANCH}"
 
 tar -zcf ../${CONFIG_OUT_DIR}.tgz .
 cd ..
