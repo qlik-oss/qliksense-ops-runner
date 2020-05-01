@@ -11,7 +11,7 @@ git config --global credential.helper store
 
 GITHUB_TOKEN=$(echo "${YAML_CONF}" | yq r - spec.git.accessToken)
 REPO=$(echo "${YAML_CONF}" | yq r - spec.git.repository)
-BRANCH=$(echo "${YAML_CONF}" | yq r - spec.gitOps.watchBranch)
+BRANCH=$(echo "${YAML_CONF}" | yq r - spec.opsRunner.watchBranch)
 echo "https://${GITHUB_TOKEN}:x-oauth-basic@github.com" >> ~/.git-credentials
 
 CONFIG_OUT_DIR="config_repo"
@@ -32,13 +32,15 @@ echo '{"cr":"'${CR_BASE64}'","config":"'${CONFIG_BASE64}'"}' > post_data.json
 
 KUZ_SERVICE_ENDPOINT=http://${OPERATOR_SERVICE_NAME}:${OPERATOR_SERVICE_PORT}/kuz
 echo "sending a kustomization request to: ${KUZ_SERVICE_ENDPOINT}"
-KUZ_RESPONSE=$(curl -X POST -H "Content-Type: application/json" -d @./post_data.json http://${KUZ_SERVICE_ENDPOINT}/kuz)
+curl -X POST -H "Content-Type: application/json" -d @./post_data.json ${KUZ_SERVICE_ENDPOINT} > kuz_response.json
 echo "received a kustomization response"
 
+echo "processing the kustomization response"
+cat kuz_response.json | jq --raw-output '.manifests' | base64 -d > manifests.tgz
+
 echo "uncompressing the kustomization response"
-echo ${KUZ_RESPONSE} | jq '.manifests' > manifests.tgz
 mkdir manifests
 tar -xzf manifests.tgz -C ./manifests
 
 echo "applying the kustomized manifest(s) to the cluster"
-kubectl apply -f ./manifests
+kubectl apply --validate=false -f ./manifests

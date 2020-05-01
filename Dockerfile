@@ -1,6 +1,6 @@
 FROM google/cloud-sdk:alpine
 
-RUN apk add --update coreutils jq
+RUN apk add --update coreutils jq tar
 
 ENV KUBECTL_VER 1.17.4
 RUN wget -O /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VER}/bin/linux/amd64/kubectl \
