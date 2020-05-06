@@ -7,26 +7,17 @@ if [[ -z "${YAML_CONF}" ]]; then
   exit 1
 fi
 
-git config --global credential.helper store
-
-GITHUB_TOKEN=$(echo "${YAML_CONF}" | yq r - spec.git.accessToken)
-REPO=$(echo "${YAML_CONF}" | yq r - spec.git.repository)
-BRANCH=$(echo "${YAML_CONF}" | yq r - spec.opsRunner.watchBranch)
-echo "https://${GITHUB_TOKEN}:x-oauth-basic@github.com" >> ~/.git-credentials
-
 CONFIG_OUT_DIR="config_repo"
-echo "cloning repo: ${REPO}"
-git clone ${REPO} ${CONFIG_OUT_DIR}
-echo "cloned repo: ${REPO}"
 cd ${CONFIG_OUT_DIR}
-git checkout ${BRANCH}
-echo "checked out branch: ${BRANCH}"
-
 echo "compressing config directory in preparation for a kustomization request"
 tar -czf ../${CONFIG_OUT_DIR}.tgz .
 cd ..
 
-CR_BASE64=$(echo "${YAML_CONF}" | base64 -w 0)
+echo 'setting rotateKeys="yes" in the CR'
+echo "${YAML_CONF}" > cr.yaml
+yq write -i cr.yaml --style=double spec.rotateKeys yes
+
+CR_BASE64=$(cat cr.yaml | base64 -w 0)
 CONFIG_BASE64=$(cat "${CONFIG_OUT_DIR}.tgz" | base64 -w 0)
 echo '{"cr":"'${CR_BASE64}'","config":"'${CONFIG_BASE64}'"}' > post_data.json
 
@@ -43,4 +34,5 @@ mkdir manifests
 tar -xzf manifests.tgz -C ./manifests
 
 echo "applying the kustomized manifest(s) to the cluster"
-kubectl apply --validate=false -f ./manifests
+cat ./manifests/*.yaml
+cat ./manifests/*.yaml | kubectl apply --validate=false -f -
