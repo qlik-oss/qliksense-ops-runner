@@ -29,7 +29,7 @@ spec:
     enabled: "yes"
     schedule: "*/10 * * * *"
     watchBranch: master
-    image: qlik-docker-oss.bintray.io/qliksense-gitops-runner
+    image: qlik-docker-oss.bintray.io/qliksense-gitops-runner:latest
   secrets:
     qliksense:
       - name: mongoDbUri
