@@ -1,4 +1,4 @@
-# poorman gitops
+# qliksense-ops-runner
 
 This provides a Docker image that operates on a local copy of the kustomize config (provided at image build time).
 The Qliksense CR is expected to be provided by the `YAML_CONF` env variable.

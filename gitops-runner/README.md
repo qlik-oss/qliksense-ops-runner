@@ -1,4 +1,4 @@
-# poorman gitops
+# qliksense-gitops-runner
 
 This provides a Docker image that pulls kustomize config from a Git repository/branch indicated in the Qliksense CR as `spec.git.repository` and `spec.opsRunner.watchBranch`.
 The Qliksense CR is expected to be provided by the `YAML_CONF` env variable.
