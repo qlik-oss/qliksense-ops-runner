@@ -12,6 +12,7 @@ git config --global credential.helper store
 GITHUB_TOKEN=$(echo "${YAML_CONF}" | yq r - spec.git.accessToken)
 REPO=$(echo "${YAML_CONF}" | yq r - spec.git.repository)
 BRANCH=$(echo "${YAML_CONF}" | yq r - spec.opsRunner.watchBranch)
+VERSION_LABEL=$(echo "${YAML_CONF}" | yq r - metadata.labels.version)
 echo "https://${GITHUB_TOKEN}:x-oauth-basic@github.com" >> ~/.git-credentials
 
 CONFIG_OUT_DIR="config_repo"
@@ -19,8 +20,14 @@ echo "cloning repo: ${REPO}"
 git clone ${REPO} ${CONFIG_OUT_DIR}
 echo "cloned repo: ${REPO}"
 cd ${CONFIG_OUT_DIR}
-git checkout ${BRANCH}
-echo "checked out branch: ${BRANCH}"
+
+GIT_REF=${BRANCH}
+if [[ -z "${BRANCH}" ]]; then
+  GIT_REF=${VERSION_LABEL}
+fi
+echo "checking out git reference: ${GIT_REF}"
+git checkout ${GIT_REF}
+echo "checked out git reference: ${GIT_REF}"
 
 echo "compressing config directory in preparation for a kustomization request"
 tar -czf ../${CONFIG_OUT_DIR}.tgz .
